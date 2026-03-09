@@ -115,13 +115,13 @@ function showGuide(el, filename) {
       '<li>双击运行（如弹出安全提示，点"更多信息"→"仍要运行"）</li>' +
       '<li>等待自动安装完成，浏览器会自动打开</li></ol>';
   } else {
-    const cmd = 'bash ~/Downloads/' + filename;
+    const cmd = 'bash ~/Downloads/openclaw-deploy*.sh';
     el.innerHTML = '<h3>下一步：运行脚本</h3><ol>' +
-      '<li>打开 <b>终端</b>（在启动台搜索"终端"或"Terminal"）</li>' +
+      '<li>打开 <b>终端</b>（按 Command+空格，输入 Terminal，回车）</li>' +
       '<li>复制粘贴下面的命令，按回车：</li></ol>' +
       '<div class="cmd-box"><span>' + cmd + '</span>' +
       '<button onclick="copyCmd(\'' + cmd + '\', this)">复制</button></div>' +
-      '<ol start="3"><li>全自动安装，完成后浏览器自动打开</li></ol>';
+      '<ol start="3"><li>全自动安装，无需任何操作</li></ol>';
   }
   el.classList.remove('hidden');
 }
