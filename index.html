@@ -3,241 +3,232 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OpenClaw 一键部署</title>
+<title>AI 助手一键部署</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-.container { background: #1e293b; border-radius: 16px; padding: 40px; max-width: 520px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
-h1 { text-align: center; font-size: 28px; margin-bottom: 8px; }
+.container { background: #1e293b; border-radius: 16px; padding: 40px; max-width: 540px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+h1 { text-align: center; font-size: 26px; margin-bottom: 6px; }
 h1 span { color: #38bdf8; }
-.subtitle { text-align: center; color: #94a3b8; margin-bottom: 32px; font-size: 14px; }
-label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #cbd5e1; }
-.form-group { margin-bottom: 20px; }
+.subtitle { text-align: center; color: #94a3b8; margin-bottom: 28px; font-size: 13px; }
+label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #cbd5e1; }
+.form-group { margin-bottom: 18px; }
 .btn-group { display: flex; gap: 8px; }
-.btn-group button { flex: 1; padding: 10px; border: 2px solid #334155; border-radius: 8px; background: #0f172a; color: #94a3b8; cursor: pointer; font-size: 14px; transition: all .2s; }
+.btn-group button { flex: 1; padding: 10px; border: 2px solid #334155; border-radius: 8px; background: #0f172a; color: #94a3b8; cursor: pointer; font-size: 13px; transition: all .2s; }
 .btn-group button:hover { border-color: #475569; color: #e2e8f0; }
 .btn-group button.active { border-color: #38bdf8; color: #38bdf8; background: #0c4a6e; }
-input { width: 100%; padding: 10px 14px; border: 2px solid #334155; border-radius: 8px; background: #0f172a; color: #e2e8f0; font-size: 14px; outline: none; transition: border-color .2s; }
+input { width: 100%; padding: 10px 14px; border: 2px solid #334155; border-radius: 8px; background: #0f172a; color: #e2e8f0; font-size: 13px; outline: none; transition: border-color .2s; }
 input:focus { border-color: #38bdf8; }
 input::placeholder { color: #475569; }
-#generate-btn { width: 100%; padding: 14px; border: none; border-radius: 10px; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; transition: opacity .2s; }
+#generate-btn { width: 100%; padding: 14px; border: none; border-radius: 10px; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity .2s; }
 #generate-btn:hover { opacity: 0.9; }
-.msg { text-align: center; margin-top: 12px; font-size: 13px; min-height: 20px; }
+.msg { text-align: center; margin-top: 10px; font-size: 13px; min-height: 18px; }
 .msg.ok { color: #4ade80; } .msg.err { color: #f87171; }
 .hidden { display: none !important; }
-.guide { margin-top: 20px; background: #0f172a; border-radius: 10px; padding: 20px; border: 1px solid #334155; }
-.guide h3 { font-size: 15px; margin-bottom: 12px; color: #38bdf8; }
-.guide ol { padding-left: 20px; font-size: 13px; line-height: 2; color: #cbd5e1; }
-.guide .cmd-box { display: flex; align-items: center; gap: 8px; margin: 10px 0; background: #1e293b; border-radius: 8px; padding: 10px 14px; font-family: monospace; font-size: 13px; color: #4ade80; word-break: break-all; }
-.guide .cmd-box button { flex-shrink: 0; padding: 4px 12px; border: 1px solid #475569; border-radius: 6px; background: #334155; color: #e2e8f0; cursor: pointer; font-size: 12px; }
-.guide .cmd-box button:hover { background: #475569; }
+.guide { margin-top: 18px; background: #0f172a; border-radius: 10px; padding: 18px; border: 1px solid #334155; }
+.guide h3 { font-size: 14px; margin-bottom: 10px; color: #38bdf8; }
+.guide ol { padding-left: 18px; font-size: 13px; line-height: 2.2; color: #cbd5e1; }
+.cmd-box { display: flex; align-items: center; gap: 8px; margin: 8px 0; background: #1e293b; border-radius: 8px; padding: 10px 14px; font-family: monospace; font-size: 12px; color: #4ade80; word-break: break-all; }
+.cmd-box button { flex-shrink: 0; padding: 4px 10px; border: 1px solid #475569; border-radius: 6px; background: #334155; color: #e2e8f0; cursor: pointer; font-size: 11px; }
+.cmd-box button:hover { background: #475569; }
+.tip { color: #94a3b8; font-size: 12px; margin-top: 8px; line-height: 1.6; }
 </style>
 </head>
 <body>
 <div class="container">
-  <h1>🐾 Open<span>Claw</span></h1>
-  <p class="subtitle">选择配置，一键生成部署脚本</p>
+  <h1>🤖 AI 助手<span>一键部署</span></h1>
+  <p class="subtitle">基于 Open WebUI，支持 OpenAI / Anthropic / 中转地址</p>
   <div class="form-group">
     <label>操作系统</label>
     <div id="os-select" class="btn-group"></div>
   </div>
-  <div class="form-group">
-    <label>AI 模型提供商</label>
-    <div id="provider-select" class="btn-group"></div>
-  </div>
   <div class="form-group" id="apikey-group">
     <label>API Key</label>
-    <input type="password" id="apikey" placeholder="输入你的 API Key">
+    <input type="password" id="apikey" placeholder="输入你的 API Key（sk- 开头）">
   </div>
-  <div class="form-group" id="baseurl-group" class="hidden">
+  <div class="form-group">
     <label>中转地址 <span style="color:#475569;font-weight:400">（可选，留空使用官方地址）</span></label>
     <input type="text" id="baseurl" placeholder="例如 https://api.example.com/v1">
   </div>
-  <button id="generate-btn" onclick="generateScript()">生成部署脚本</button>
+  <button id="generate-btn" onclick="generate()">生成部署脚本</button>
   <p id="msg" class="msg"></p>
   <div id="guide" class="guide hidden"></div>
 </div>
 <script>
-const state = { os: 'windows', provider: 'anthropic' };
-const providers = {
-  anthropic: { envKey: 'ANTHROPIC_API_KEY', needKey: true },
-  openai:    { envKey: 'OPENAI_API_KEY',    needKey: true },
-  ollama:    { envKey: '',                  needKey: false }
-};
+const state = { os: 'windows' };
+
 function createBtnGroup(id, opts, key) {
   const el = document.getElementById(id);
   opts.forEach(([v, l]) => {
     const b = document.createElement('button');
-    b.textContent = l; b.className = v === state[key] ? 'active' : '';
+    b.textContent = l;
+    b.className = v === state[key] ? 'active' : '';
     b.onclick = () => {
       state[key] = v;
       el.querySelectorAll('button').forEach(x => x.classList.remove('active'));
       b.classList.add('active');
-      if (key === 'provider') toggleKey();
       document.getElementById('guide').classList.add('hidden');
     };
     el.appendChild(b);
   });
 }
-function toggleKey() {
-  const needKey = providers[state.provider].needKey;
-  document.getElementById('apikey-group').classList.toggle('hidden', !needKey);
-  document.getElementById('baseurl-group').classList.toggle('hidden', !needKey);
-}
+
 createBtnGroup('os-select', [['windows','Windows'],['macos','macOS']], 'os');
-createBtnGroup('provider-select', [['anthropic','Anthropic'],['openai','OpenAI'],['ollama','Ollama']], 'provider');
-toggleKey();
 
 function copyCmd(text, btn) {
   navigator.clipboard.writeText(text);
-  btn.textContent = '已复制'; setTimeout(() => btn.textContent = '复制', 1500);
+  btn.textContent = '已复制';
+  setTimeout(() => btn.textContent = '复制', 1500);
 }
 
-function generateScript() {
-  const msg = document.getElementById('msg');
-  const guide = document.getElementById('guide');
-  const p = providers[state.provider];
-  const key = document.getElementById('apikey').value.trim();
-  const baseurl = document.getElementById('baseurl').value.trim();
-  if (p.needKey && !key) { msg.className='msg err'; msg.textContent='请输入 API Key'; return; }
-  let script, filename;
-  if (state.os === 'windows') {
-    script = genWin(p.envKey, key, baseurl); filename = 'openclaw-deploy.bat';
-    const blob = new Blob([script], { type: 'application/octet-stream' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = filename; a.click();
-    URL.revokeObjectURL(a.href);
-    msg.className = 'msg ok'; msg.textContent = '脚本已下载!';
-    showGuide(guide, filename);
-  } else {
-    script = genMac(p.envKey, key, baseurl);
-    msg.className = 'msg ok'; msg.textContent = '';
-    showMacGuide(guide, script);
-  }
-}
-
-function showGuide(el, filename) {
-  el.innerHTML = '<h3>下一步：运行脚本</h3><ol>' +
-    '<li>找到下载的 <b>' + filename + '</b> 文件</li>' +
-    '<li>双击运行（如弹出安全提示，点"更多信息"→"仍要运行"）</li>' +
-    '<li>等待自动安装完成，浏览器会自动打开</li></ol>';
-  el.classList.remove('hidden');
-}
-
-function showMacGuide(el, script) {
-  const encoded = btoa(unescape(encodeURIComponent(script)));
-  const cmd = 'echo ' + encoded + ' | base64 -d | bash';
-  el.innerHTML = '<h3>只需两步</h3><ol>' +
-    '<li>打开 <b>终端</b>（按 Command+空格，输入 Terminal，回车）</li>' +
-    '<li>复制下面的命令，粘贴到终端，按回车：</li></ol>' +
-    '<div class="cmd-box"><span id="mac-cmd" style="user-select:all">' + cmd + '</span>' +
-    '<button onclick="copyCmd(document.getElementById(\'mac-cmd\').textContent, this)">复制</button></div>' +
-    '<p style="color:#94a3b8;font-size:12px;margin-top:8px;text-align:center">无需下载文件，粘贴即自动安装</p>';
-  el.classList.remove('hidden');
-}
-
-function genMac(envKey, apiKey, baseUrl) {
-  const keyLine = envKey ? 'export ' + envKey + '="' + apiKey + '"' : '# Ollama 无需 API Key';
-  const profileLine = envKey ? 'grep -q "' + envKey + '" ~/.zshrc 2>/dev/null || echo \'export ' + envKey + '="' + apiKey + '"\' >> ~/.zshrc' : '';
-  const baseUrlLine = baseUrl ? 'export OPENAI_BASE_URL="' + baseUrl + '"\nexport ANTHROPIC_BASE_URL="' + baseUrl + '"' : '';
-  const baseUrlProfile = baseUrl ? 'grep -q "OPENAI_BASE_URL" ~/.zshrc 2>/dev/null || echo \'export OPENAI_BASE_URL="' + baseUrl + '"\' >> ~/.zshrc' : '';
+function genWin(key, baseurl) {
+  const openaiBase = baseurl || 'https://api.openai.com/v1';
   return [
-    '#!/bin/bash', '',
+    '@echo off', 'chcp 65001 >nul', 'title AI 助手一键部署',
+    'echo.', 'echo ========================================',
+    'echo   AI 助手一键部署', 'echo   请耐心等待，全程自动完成',
+    'echo ========================================', 'echo.',
+    '',
+    'net session >nul 2>&1',
+    'if %errorlevel% neq 0 (',
+    '  echo [!] 请右键此文件，选择"以管理员身份运行"',
+    '  pause & exit /b 1',
+    ')',
+    '',
+    'echo [1/3] 检查 Docker...',
+    'docker --version >nul 2>&1',
+    'if %errorlevel% equ 0 goto :docker_ok',
+    'echo [!] 正在下载 Docker Desktop（约600MB）...',
+    'powershell -Command "Invoke-WebRequest -Uri \'https://desktop.docker.com/win/main/amd64/Docker%%20Desktop%%20Installer.exe\' -OutFile \'%TEMP%\\DockerInstaller.exe\' -UseBasicParsing"',
+    'if %errorlevel% neq 0 ( echo [X] 下载失败，请检查网络 & pause & exit /b 1 )',
+    'echo [!] 正在安装 Docker Desktop...',
+    '"%TEMP%\\DockerInstaller.exe" install --quiet --accept-license',
+    'del "%TEMP%\\DockerInstaller.exe"',
+    'echo [OK] Docker 已安装，请重启电脑后再次运行此脚本',
+    'pause & exit /b 0',
+    '',
+    ':docker_ok',
+    'echo [OK] Docker 已安装',
+    'docker info >nul 2>&1',
+    'if %errorlevel% neq 0 (',
+    '  echo [!] 正在启动 Docker Desktop...',
+    '  start "" "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe"',
+    '  echo     等待启动（60秒）...',
+    '  timeout /t 60 /nobreak >nul',
+    ')',
+    '',
+    'echo [2/3] 启动 Open WebUI...',
+    'docker stop open-webui >nul 2>&1',
+    'docker rm open-webui >nul 2>&1',
+    'docker run -d -p 3000:8080 --name open-webui --restart always' +
+      ' -e OPENAI_API_KEY="' + key + '"' +
+      ' -e OPENAI_API_BASE_URL="' + openaiBase + '"' +
+      ' -e WEBUI_AUTH=False' +
+      ' ghcr.io/open-webui/open-webui:main',
+    'if %errorlevel% neq 0 ( echo [X] 启动失败 & pause & exit /b 1 )',
+    '',
+    'echo [3/3] 等待启动...',
+    'timeout /t 10 /nobreak >nul',
+    'start http://localhost:3000/',
+    'echo.',
+    'echo ========================================',
+    'echo   部署完成！浏览器已自动打开',
+    'echo   地址：http://localhost:3000/',
+    'echo ========================================',
+    'echo.',
+    'pause',
+  ].join('\r\n');
+}
+
+function genMac(key, baseurl) {
+  const openaiBase = baseurl || 'https://api.openai.com/v1';
+  return [
+    '#!/bin/bash', 'set -e',
     'echo ""',
     'echo "========================================"',
-    'echo "  OpenClaw 一键部署 (macOS)"',
-    'echo "  全自动安装，请耐心等待"',
+    'echo "  AI 助手一键部署 (macOS)"',
+    'echo "  请耐心等待，全程自动完成"',
     'echo "========================================"',
     'echo ""',
-    '# 修复 git SSH 问题（写入 gitconfig 文件确保 npm 也生效）',
-    'mkdir -p "$HOME/.config/git"',
-    'git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"',
-    'git config --global url."https://github.com/".insteadOf "git@github.com:"',
-    'export GIT_CONFIG_GLOBAL="$HOME/.gitconfig"',
     '',
-    '# npm 安装到用户目录，无需 sudo',
-    'NPM_DIR="$HOME/.npm-global"',
-    'mkdir -p "$NPM_DIR"',
-    'npm config set prefix "$NPM_DIR"',
-    'export PATH="$NPM_DIR/bin:$PATH"',
-    '# 修复 npm 缓存权限',
-    'sudo chown -R $(id -u):$(id -g) "$HOME/.npm" 2>/dev/null || true',
-    '',
-    'echo "[1/4] 准备 Node.js ..."',
-    'if ! command -v node &>/dev/null; then',
-    '  ARCH=$(uname -m)',
-    '  NODE_VER="v22.14.0"',
-    '  [ "$ARCH" = "arm64" ] && PKG="node-${NODE_VER}-darwin-arm64.tar.gz" || PKG="node-${NODE_VER}-darwin-x64.tar.gz"',
-    '  curl -fsSL "https://nodejs.org/dist/${NODE_VER}/${PKG}" -o /tmp/node.tar.gz',
-    '  mkdir -p "$HOME/.local/nodejs"',
-    '  tar -xzf /tmp/node.tar.gz -C "$HOME/.local/nodejs"',
-    '  export PATH="$HOME/.local/nodejs/node-${NODE_VER}-darwin-${ARCH}/bin:$PATH"',
-    '  rm /tmp/node.tar.gz',
+    'echo "[1/3] 检查 Docker..."',
+    'if ! command -v docker &>/dev/null || ! docker info &>/dev/null 2>&1; then',
+    '  if command -v brew &>/dev/null; then',
+    '    echo "[!] 正在通过 Homebrew 安装 Docker Desktop..."',
+    '    brew install --cask docker',
+    '  else',
+    '    ARCH=$(uname -m)',
+    '    echo "[!] 正在下载 Docker Desktop..."',
+    '    if [ "$ARCH" = "arm64" ]; then',
+    '      curl -fsSL -o /tmp/Docker.dmg "https://desktop.docker.com/mac/main/arm64/Docker.dmg"',
+    '    else',
+    '      curl -fsSL -o /tmp/Docker.dmg "https://desktop.docker.com/mac/main/amd64/Docker.dmg"',
+    '    fi',
+    '    hdiutil attach /tmp/Docker.dmg -quiet',
+    '    cp -R "/Volumes/Docker/Docker.app" /Applications/',
+    '    hdiutil detach "/Volumes/Docker" -quiet',
+    '    rm /tmp/Docker.dmg',
+    '  fi',
+    '  open -a Docker',
+    '  echo "  等待 Docker 启动（60秒）..."',
+    '  sleep 60',
     'fi',
-    'echo "  Node.js $(node -v)"', 'echo ""',
+    'echo "[OK] Docker 就绪"',
+    'echo ""',
     '',
-    'echo "[2/4] 安装 OpenClaw ..."',
-    'npm install -g openclaw@latest --prefer-online',
-    'if [ $? -ne 0 ]; then echo "  安装失败，请截图发给管理员"; exit 1; fi',
-    'echo "  安装完成"', 'echo ""',
+    'echo "[2/3] 启动 Open WebUI..."',
+    'docker stop open-webui 2>/dev/null || true',
+    'docker rm open-webui 2>/dev/null || true',
+    'docker run -d -p 3000:8080 --name open-webui --restart always \\',
+    '  -e OPENAI_API_KEY="' + key + '" \\',
+    '  -e OPENAI_API_BASE_URL="' + openaiBase + '" \\',
+    '  -e WEBUI_AUTH=False \\',
+    '  ghcr.io/open-webui/open-webui:main',
     '',
-    'echo "[3/4] 配置 OpenClaw ..."',
-    profileLine,
-    baseUrlProfile,
-    '"$NPM_DIR/bin/openclaw" config set gateway.mode local',
-    'echo "  配置完成"', 'echo ""',
-    '',
-    'echo "[4/4] 启动 OpenClaw ..."',
-    'echo "  浏览器将自动打开 http://127.0.0.1:18789/"',
-    'echo "  按 Ctrl+C 停止服务"', 'echo ""',
-    '# 停止已有实例',
-    '"$NPM_DIR/bin/openclaw" gateway stop 2>/dev/null || true',
-    'sleep 1',
-    'sleep 2 && open "http://127.0.0.1:18789/" &',
-    '# 带 key 直接启动，确保认证生效',
-    (envKey ? envKey + '="' + apiKey + '"' : '') + (baseUrl ? ' OPENAI_BASE_URL="' + baseUrl + '" ANTHROPIC_BASE_URL="' + baseUrl + '"' : '') + ' "$NPM_DIR/bin/openclaw" gateway',
+    'echo "[3/3] 等待启动..."',
+    'sleep 10',
+    'open "http://localhost:3000/"',
+    'echo ""',
+    'echo "========================================"',
+    'echo "  部署完成！浏览器已自动打开"',
+    'echo "  地址：http://localhost:3000/"',
+    'echo "========================================"',
   ].join('\n');
 }
 
-function genWin(envKey, apiKey, baseUrl) {
-  const setKey = envKey ? 'setx ' + envKey + ' "' + apiKey + '" >nul' : 'rem Ollama 无需 API Key';
-  const setBaseUrl = baseUrl ? 'setx OPENAI_BASE_URL "' + baseUrl + '" >nul\r\nsetx ANTHROPIC_BASE_URL "' + baseUrl + '" >nul' : '';
-  return [
-    '@echo off', 'chcp 65001 >nul', 'title OpenClaw 一键部署',
-    'echo.', 'echo ========================================',
-    'echo   OpenClaw 一键部署 (Windows)', 'echo   全自动安装，请耐心等待',
-    'echo ========================================', 'echo.', '',
-    'echo [1/4] 准备 Node.js ...', 'where node >nul 2>nul',
-    'if %errorlevel% equ 0 (',
-    '  for /f "tokens=*" %%i in (\'node -v\') do echo   已安装 Node.js %%i',
-    '  goto :node_ok', ')',
-    'echo   未检测到 Node.js，正在自动安装...',
-    'echo   正在下载 Node.js 安装包（约30MB）...',
-    'powershell -Command "Invoke-WebRequest -Uri \'https://nodejs.org/dist/v22.14.0/node-v22.14.0-x64.msi\' -OutFile \'%TEMP%\\node_install.msi\'"',
-    'if %errorlevel% neq 0 (',
-    '  echo   下载失败，请检查网络后重试', '  pause', '  exit /b 1', ')',
-    'echo   正在安装 Node.js ...',
-    'msiexec /i "%TEMP%\\node_install.msi" /qn /norestart',
-    'set "PATH=%ProgramFiles%\\nodejs;%PATH%"',
-    'del "%TEMP%\\node_install.msi"',
-    'echo   Node.js 安装完成',
-    ':node_ok', 'echo.', '',
-    'echo [2/4] 安装 OpenClaw ...',
-    'call npm install -g openclaw@latest',
-    'if %errorlevel% neq 0 ( echo   安装失败，请检查网络 & pause & exit /b 1 )',
-    'echo   安装完成', 'echo.', '',
-    'echo [3/4] 配置 OpenClaw ...',
-    setKey,
-    setBaseUrl,
-    'call openclaw config set gateway.mode local',
-    'call openclaw doctor --fix >nul 2>&1',
-    'echo   配置完成', 'echo.', '',
-    'echo [4/4] 启动 OpenClaw ...', 'echo.',
-    'echo   浏览器将自动打开 http://127.0.0.1:18789/',
-    'echo   关闭此窗口即可停止服务', 'echo.',
-    'start http://127.0.0.1:18789/',
-    'call openclaw gateway',
-  ].join('\r\n');
+function generate() {
+  const msg = document.getElementById('msg');
+  const guide = document.getElementById('guide');
+  const key = document.getElementById('apikey').value.trim();
+  const baseurl = document.getElementById('baseurl').value.trim().replace(/\/$/, '');
+  if (!key) { msg.className = 'msg err'; msg.textContent = '请输入 API Key'; return; }
+
+  if (state.os === 'windows') {
+    const script = genWin(key, baseurl);
+    const blob = new Blob([script], { type: 'application/octet-stream' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'install-ai.bat'; a.click();
+    URL.revokeObjectURL(a.href);
+    msg.className = 'msg ok'; msg.textContent = '脚本已下载！';
+    guide.innerHTML = '<h3>下一步</h3><ol>' +
+      '<li>找到下载的 <b>install-ai.bat</b></li>' +
+      '<li>右键 → <b>以管理员身份运行</b></li>' +
+      '<li>等待安装完成（约5-10分钟），浏览器自动打开</li>' +
+      '</ol><p class="tip">首次安装需要下载 Docker，请保持网络畅通</p>';
+    guide.classList.remove('hidden');
+  } else {
+    const script = genMac(key, baseurl);
+    const encoded = btoa(unescape(encodeURIComponent(script)));
+    const cmd = 'echo ' + encoded + ' | base64 -d | bash';
+    guide.innerHTML = '<h3>只需两步</h3><ol>' +
+      '<li>按 <b>Command+空格</b>，输入 Terminal，回车打开终端</li>' +
+      '<li>点复制，粘贴到终端，按回车：</li></ol>' +
+      '<div class="cmd-box"><span id="mac-cmd" style="user-select:all">' + cmd + '</span>' +
+      '<button onclick="copyCmd(document.getElementById(\'mac-cmd\').textContent,this)">复制</button></div>' +
+      '<p class="tip">等待安装完成（约5-10分钟），浏览器自动打开 http://localhost:3000</p>';
+    guide.classList.remove('hidden');
+    msg.className = 'msg ok'; msg.textContent = '';
+  }
 }
 </script>
 </body>
