@@ -56,9 +56,9 @@ input::placeholder { color: #475569; }
 <script>
 const state = { os: 'windows', provider: 'anthropic' };
 const providers = {
-  anthropic: { provider: 'anthropic', model: 'claude-sonnet-4-20250514', needKey: true },
-  openai: { provider: 'openai', model: 'gpt-4o', needKey: true },
-  ollama: { provider: 'ollama', model: 'llama3', baseUrl: 'http://localhost:11434', needKey: false }
+  anthropic: { envKey: 'ANTHROPIC_API_KEY', needKey: true },
+  openai:    { envKey: 'OPENAI_API_KEY',    needKey: true },
+  ollama:    { envKey: '',                  needKey: false }
 };
 function createBtnGroup(id, opts, key) {
   const el = document.getElementById(id);
@@ -93,13 +93,9 @@ function generateScript() {
   const p = providers[state.provider];
   const key = document.getElementById('apikey').value.trim();
   if (p.needKey && !key) { msg.className='msg err'; msg.textContent='请输入 API Key'; return; }
-  const cfg = { provider: p.provider, model: p.model };
-  if (key) cfg.apiKey = key;
-  if (p.baseUrl) cfg.baseUrl = p.baseUrl;
-  const json = JSON.stringify(cfg, null, 2);
   let script, filename;
   if (state.os === 'windows') {
-    script = genWin(json); filename = 'openclaw-deploy.bat';
+    script = genWin(p.envKey, key); filename = 'openclaw-deploy.bat';
     const blob = new Blob([script], { type: 'application/octet-stream' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = filename; a.click();
@@ -107,7 +103,7 @@ function generateScript() {
     msg.className = 'msg ok'; msg.textContent = '脚本已下载!';
     showGuide(guide, filename);
   } else {
-    script = genMac(json);
+    script = genMac(p.envKey, key);
     msg.className = 'msg ok'; msg.textContent = '';
     showMacGuide(guide, script);
   }
@@ -133,7 +129,9 @@ function showMacGuide(el, script) {
   el.classList.remove('hidden');
 }
 
-function genMac(json) {
+function genMac(envKey, apiKey) {
+  const keyLine = envKey ? 'export ' + envKey + '="' + apiKey + '"' : '# Ollama 无需 API Key';
+  const profileLine = envKey ? 'grep -q "' + envKey + '" ~/.zshrc 2>/dev/null || echo \'export ' + envKey + '="' + apiKey + '"\' >> ~/.zshrc' : '';
   return [
     '#!/bin/bash', '',
     'echo ""',
@@ -141,72 +139,51 @@ function genMac(json) {
     'echo "  OpenClaw 一键部署 (macOS)"',
     'echo "  全自动安装，请耐心等待"',
     'echo "========================================"',
-    'echo ""', '',
-    '# 修复 git SSH 问题，避免依赖拉取失败',
+    'echo ""',
+    '# 修复 git SSH 问题',
     'git config --global url.https://github.com/.insteadOf ssh://git@github.com/',
-    'git config --global url.https://github.com/.insteadOf git@github.com:', '',
-    '# 设置 npm 用户目录，不需要 sudo',
+    'git config --global url.https://github.com/.insteadOf git@github.com:',
+    '',
+    '# npm 安装到用户目录，无需 sudo',
     'NPM_DIR="$HOME/.npm-global"',
     'mkdir -p "$NPM_DIR"',
     'npm config set prefix "$NPM_DIR"',
-    'export PATH="$NPM_DIR/bin:$PATH"', '',
-    '# [1/4] 自动安装 Node.js',
+    'export PATH="$NPM_DIR/bin:$PATH"',
+    '',
     'echo "[1/4] 准备 Node.js ..."',
-    'if command -v node &>/dev/null; then',
-    '  echo "  已安装 Node.js $(node -v)"',
-    'else',
-    '  echo "  未检测到 Node.js，正在自动安装..."',
-    '  if command -v brew &>/dev/null; then',
-    '    brew install node',
-    '  else',
-    '    ARCH=$(uname -m)',
-    '    NODE_VER="v22.14.0"',
-    '    if [ "$ARCH" = "arm64" ]; then',
-    '      NODE_PKG="node-${NODE_VER}-darwin-arm64.tar.gz"',
-    '    else',
-    '      NODE_PKG="node-${NODE_VER}-darwin-x64.tar.gz"',
-    '    fi',
-    '    echo "  正在下载 Node.js ..."',
-    '    curl -fsSL "https://nodejs.org/dist/${NODE_VER}/${NODE_PKG}" -o /tmp/node.tar.gz',
-    '    mkdir -p "$HOME/.local/nodejs"',
-    '    tar -xzf /tmp/node.tar.gz -C "$HOME/.local/nodejs"',
-    '    export PATH="$HOME/.local/nodejs/node-${NODE_VER}-darwin-${ARCH}/bin:$PATH"',
-    '    rm /tmp/node.tar.gz',
-    '  fi',
-    '  echo "  Node.js $(node -v) 安装完成"',
+    'if ! command -v node &>/dev/null; then',
+    '  ARCH=$(uname -m)',
+    '  NODE_VER="v22.14.0"',
+    '  [ "$ARCH" = "arm64" ] && PKG="node-${NODE_VER}-darwin-arm64.tar.gz" || PKG="node-${NODE_VER}-darwin-x64.tar.gz"',
+    '  curl -fsSL "https://nodejs.org/dist/${NODE_VER}/${PKG}" -o /tmp/node.tar.gz',
+    '  mkdir -p "$HOME/.local/nodejs"',
+    '  tar -xzf /tmp/node.tar.gz -C "$HOME/.local/nodejs"',
+    '  export PATH="$HOME/.local/nodejs/node-${NODE_VER}-darwin-${ARCH}/bin:$PATH"',
+    '  rm /tmp/node.tar.gz',
     'fi',
-    'echo ""', '',
-    '# [2/4] 安装 OpenClaw',
+    'echo "  Node.js $(node -v)"', 'echo ""',
+    '',
     'echo "[2/4] 安装 OpenClaw ..."',
     'npm install -g openclaw@latest',
-    'if [ $? -ne 0 ]; then',
-    '  echo "  安装失败，请检查网络后重试"',
-    '  exit 1',
-    'fi',
-    'echo "  安装完成"',
-    'echo ""', '',
-    '# [3/4] 写入配置',
-    'echo "[3/4] 写入配置 ..."',
-    'mkdir -p "$HOME/.openclaw"',
-    "cat > \"$HOME/.openclaw/openclaw.json\" << 'EOFCONFIG'",
-    json,
-    'EOFCONFIG',
-    'echo "  配置已写入"',
-    'echo ""', '',
-    '# [4/4] 启动',
+    'echo "  安装完成"', 'echo ""',
+    '',
+    'echo "[3/4] 配置 OpenClaw ..."',
+    keyLine,
+    profileLine,
+    '"$NPM_DIR/bin/openclaw" config set gateway.mode local',
+    '"$NPM_DIR/bin/openclaw" doctor --fix >/dev/null 2>&1 || true',
+    'echo "  配置完成"', 'echo ""',
+    '',
     'echo "[4/4] 启动 OpenClaw ..."',
     'echo "  浏览器将自动打开 http://127.0.0.1:18789/"',
-    'echo "  按 Ctrl+C 停止服务"',
-    'echo ""',
+    'echo "  按 Ctrl+C 停止服务"', 'echo ""',
     'sleep 2 && open "http://127.0.0.1:18789/" &',
-    '"$NPM_DIR/bin/openclaw" gateway || openclaw gateway',
+    '"$NPM_DIR/bin/openclaw" gateway',
   ].join('\n');
 }
 
-function genWin(json) {
-  const jl = json.split('\n');
-  let wj = 'echo ' + jl[0] + ' > "%USERPROFILE%\\.openclaw\\openclaw.json"\r\n';
-  for (let i = 1; i < jl.length; i++) wj += 'echo ' + jl[i] + ' >> "%USERPROFILE%\\.openclaw\\openclaw.json"\r\n';
+function genWin(envKey, apiKey) {
+  const setKey = envKey ? 'setx ' + envKey + ' "' + apiKey + '" >nul' : 'rem Ollama 无需 API Key';
   return [
     '@echo off', 'chcp 65001 >nul', 'title OpenClaw 一键部署',
     'echo.', 'echo ========================================',
@@ -231,10 +208,11 @@ function genWin(json) {
     'call npm install -g openclaw@latest',
     'if %errorlevel% neq 0 ( echo   安装失败，请检查网络 & pause & exit /b 1 )',
     'echo   安装完成', 'echo.', '',
-    'echo [3/4] 写入配置 ...',
-    'if not exist "%USERPROFILE%\\.openclaw" mkdir "%USERPROFILE%\\.openclaw"',
-  ].join('\r\n') + '\r\n' + wj + [
-    'echo   配置已写入', 'echo.', '',
+    'echo [3/4] 配置 OpenClaw ...',
+    setKey,
+    'call openclaw config set gateway.mode local',
+    'call openclaw doctor --fix >nul 2>&1',
+    'echo   配置完成', 'echo.', '',
     'echo [4/4] 启动 OpenClaw ...', 'echo.',
     'echo   浏览器将自动打开 http://127.0.0.1:18789/',
     'echo   关闭此窗口即可停止服务', 'echo.',
