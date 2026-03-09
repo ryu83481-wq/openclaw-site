@@ -49,6 +49,10 @@ input::placeholder { color: #475569; }
     <label>API Key</label>
     <input type="password" id="apikey" placeholder="输入你的 API Key">
   </div>
+  <div class="form-group" id="baseurl-group" class="hidden">
+    <label>中转地址 <span style="color:#475569;font-weight:400">（可选，留空使用官方地址）</span></label>
+    <input type="text" id="baseurl" placeholder="例如 https://api.example.com/v1">
+  </div>
   <button id="generate-btn" onclick="generateScript()">生成部署脚本</button>
   <p id="msg" class="msg"></p>
   <div id="guide" class="guide hidden"></div>
@@ -76,7 +80,9 @@ function createBtnGroup(id, opts, key) {
   });
 }
 function toggleKey() {
-  document.getElementById('apikey-group').classList.toggle('hidden', !providers[state.provider].needKey);
+  const needKey = providers[state.provider].needKey;
+  document.getElementById('apikey-group').classList.toggle('hidden', !needKey);
+  document.getElementById('baseurl-group').classList.toggle('hidden', !needKey);
 }
 createBtnGroup('os-select', [['windows','Windows'],['macos','macOS']], 'os');
 createBtnGroup('provider-select', [['anthropic','Anthropic'],['openai','OpenAI'],['ollama','Ollama']], 'provider');
@@ -92,10 +98,11 @@ function generateScript() {
   const guide = document.getElementById('guide');
   const p = providers[state.provider];
   const key = document.getElementById('apikey').value.trim();
+  const baseurl = document.getElementById('baseurl').value.trim();
   if (p.needKey && !key) { msg.className='msg err'; msg.textContent='请输入 API Key'; return; }
   let script, filename;
   if (state.os === 'windows') {
-    script = genWin(p.envKey, key); filename = 'openclaw-deploy.bat';
+    script = genWin(p.envKey, key, baseurl); filename = 'openclaw-deploy.bat';
     const blob = new Blob([script], { type: 'application/octet-stream' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = filename; a.click();
@@ -103,7 +110,7 @@ function generateScript() {
     msg.className = 'msg ok'; msg.textContent = '脚本已下载!';
     showGuide(guide, filename);
   } else {
-    script = genMac(p.envKey, key);
+    script = genMac(p.envKey, key, baseurl);
     msg.className = 'msg ok'; msg.textContent = '';
     showMacGuide(guide, script);
   }
@@ -129,9 +136,11 @@ function showMacGuide(el, script) {
   el.classList.remove('hidden');
 }
 
-function genMac(envKey, apiKey) {
+function genMac(envKey, apiKey, baseUrl) {
   const keyLine = envKey ? 'export ' + envKey + '="' + apiKey + '"' : '# Ollama 无需 API Key';
   const profileLine = envKey ? 'grep -q "' + envKey + '" ~/.zshrc 2>/dev/null || echo \'export ' + envKey + '="' + apiKey + '"\' >> ~/.zshrc' : '';
+  const baseUrlLine = baseUrl ? 'export OPENAI_BASE_URL="' + baseUrl + '"\nexport ANTHROPIC_BASE_URL="' + baseUrl + '"' : '';
+  const baseUrlProfile = baseUrl ? 'grep -q "OPENAI_BASE_URL" ~/.zshrc 2>/dev/null || echo \'export OPENAI_BASE_URL="' + baseUrl + '"\' >> ~/.zshrc' : '';
   return [
     '#!/bin/bash', '',
     'echo ""',
@@ -170,6 +179,8 @@ function genMac(envKey, apiKey) {
     'echo "[3/4] 配置 OpenClaw ..."',
     keyLine,
     profileLine,
+    baseUrlLine,
+    baseUrlProfile,
     '"$NPM_DIR/bin/openclaw" config set gateway.mode local',
     '"$NPM_DIR/bin/openclaw" doctor --fix >/dev/null 2>&1 || true',
     'echo "  配置完成"', 'echo ""',
@@ -182,8 +193,9 @@ function genMac(envKey, apiKey) {
   ].join('\n');
 }
 
-function genWin(envKey, apiKey) {
+function genWin(envKey, apiKey, baseUrl) {
   const setKey = envKey ? 'setx ' + envKey + ' "' + apiKey + '" >nul' : 'rem Ollama 无需 API Key';
+  const setBaseUrl = baseUrl ? 'setx OPENAI_BASE_URL "' + baseUrl + '" >nul\r\nsetx ANTHROPIC_BASE_URL "' + baseUrl + '" >nul' : '';
   return [
     '@echo off', 'chcp 65001 >nul', 'title OpenClaw 一键部署',
     'echo.', 'echo ========================================',
@@ -210,6 +222,7 @@ function genWin(envKey, apiKey) {
     'echo   安装完成', 'echo.', '',
     'echo [3/4] 配置 OpenClaw ...',
     setKey,
+    setBaseUrl,
     'call openclaw config set gateway.mode local',
     'call openclaw doctor --fix >nul 2>&1',
     'echo   配置完成', 'echo.', '',
