@@ -7,7 +7,7 @@
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-.container { background: #1e293b; border-radius: 16px; padding: 40px; max-width: 480px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.container { background: #1e293b; border-radius: 16px; padding: 40px; max-width: 520px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
 h1 { text-align: center; font-size: 28px; margin-bottom: 8px; }
 h1 span { color: #38bdf8; }
 .subtitle { text-align: center; color: #94a3b8; margin-bottom: 32px; font-size: 14px; }
@@ -23,9 +23,14 @@ input::placeholder { color: #475569; }
 #generate-btn { width: 100%; padding: 14px; border: none; border-radius: 10px; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; transition: opacity .2s; }
 #generate-btn:hover { opacity: 0.9; }
 .msg { text-align: center; margin-top: 12px; font-size: 13px; min-height: 20px; }
-.msg.ok { color: #4ade80; }
-.msg.err { color: #f87171; }
+.msg.ok { color: #4ade80; } .msg.err { color: #f87171; }
 .hidden { display: none !important; }
+.guide { margin-top: 20px; background: #0f172a; border-radius: 10px; padding: 20px; border: 1px solid #334155; }
+.guide h3 { font-size: 15px; margin-bottom: 12px; color: #38bdf8; }
+.guide ol { padding-left: 20px; font-size: 13px; line-height: 2; color: #cbd5e1; }
+.guide .cmd-box { display: flex; align-items: center; gap: 8px; margin: 10px 0; background: #1e293b; border-radius: 8px; padding: 10px 14px; font-family: monospace; font-size: 13px; color: #4ade80; word-break: break-all; }
+.guide .cmd-box button { flex-shrink: 0; padding: 4px 12px; border: 1px solid #475569; border-radius: 6px; background: #334155; color: #e2e8f0; cursor: pointer; font-size: 12px; }
+.guide .cmd-box button:hover { background: #475569; }
 </style>
 </head>
 <body>
@@ -46,118 +51,182 @@ input::placeholder { color: #475569; }
   </div>
   <button id="generate-btn" onclick="generateScript()">生成部署脚本</button>
   <p id="msg" class="msg"></p>
+  <div id="guide" class="guide hidden"></div>
 </div>
 <script>
 const state = { os: 'windows', provider: 'anthropic' };
 const providers = {
-  anthropic: { name: 'Anthropic (Claude)', provider: 'anthropic', model: 'claude-sonnet-4-20250514', needKey: true },
-  openai: { name: 'OpenAI (GPT)', provider: 'openai', model: 'gpt-4o', needKey: true },
-  ollama: { name: 'Ollama (本地)', provider: 'ollama', model: 'llama3', baseUrl: 'http://localhost:11434', needKey: false }
+  anthropic: { provider: 'anthropic', model: 'claude-sonnet-4-20250514', needKey: true },
+  openai: { provider: 'openai', model: 'gpt-4o', needKey: true },
+  ollama: { provider: 'ollama', model: 'llama3', baseUrl: 'http://localhost:11434', needKey: false }
 };
-
-function createBtnGroup(containerId, options, stateKey) {
-  const el = document.getElementById(containerId);
-  options.forEach(([val, label]) => {
-    const btn = document.createElement('button');
-    btn.textContent = label;
-    btn.className = val === state[stateKey] ? 'active' : '';
-    btn.onclick = () => {
-      state[stateKey] = val;
-      el.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      if (stateKey === 'provider') toggleKeyInput();
+function createBtnGroup(id, opts, key) {
+  const el = document.getElementById(id);
+  opts.forEach(([v, l]) => {
+    const b = document.createElement('button');
+    b.textContent = l; b.className = v === state[key] ? 'active' : '';
+    b.onclick = () => {
+      state[key] = v;
+      el.querySelectorAll('button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      if (key === 'provider') toggleKey();
+      document.getElementById('guide').classList.add('hidden');
     };
-    el.appendChild(btn);
+    el.appendChild(b);
   });
 }
-
-function toggleKeyInput() {
-  const g = document.getElementById('apikey-group');
-  g.classList.toggle('hidden', !providers[state.provider].needKey);
+function toggleKey() {
+  document.getElementById('apikey-group').classList.toggle('hidden', !providers[state.provider].needKey);
 }
-
 createBtnGroup('os-select', [['windows','Windows'],['macos','macOS']], 'os');
 createBtnGroup('provider-select', [['anthropic','Anthropic'],['openai','OpenAI'],['ollama','Ollama']], 'provider');
-toggleKeyInput();
+toggleKey();
+
+function copyCmd(text, btn) {
+  navigator.clipboard.writeText(text);
+  btn.textContent = '已复制'; setTimeout(() => btn.textContent = '复制', 1500);
+}
 
 function generateScript() {
   const msg = document.getElementById('msg');
+  const guide = document.getElementById('guide');
   const p = providers[state.provider];
   const key = document.getElementById('apikey').value.trim();
   if (p.needKey && !key) { msg.className='msg err'; msg.textContent='请输入 API Key'; return; }
-  const config = { provider: p.provider, model: p.model };
-  if (key) config.apiKey = key;
-  if (p.baseUrl) config.baseUrl = p.baseUrl;
-  const json = JSON.stringify(config, null, 2);
+  const cfg = { provider: p.provider, model: p.model };
+  if (key) cfg.apiKey = key;
+  if (p.baseUrl) cfg.baseUrl = p.baseUrl;
+  const json = JSON.stringify(cfg, null, 2);
   let script, filename;
   if (state.os === 'windows') { script = genWin(json); filename = 'openclaw-deploy.bat'; }
   else { script = genMac(json); filename = 'openclaw-deploy.sh'; }
-  const blob = new Blob([script], { type: 'text/plain' });
+  const blob = new Blob([script], { type: 'application/octet-stream' });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
+  a.href = URL.createObjectURL(blob); a.download = filename; a.click();
   URL.revokeObjectURL(a.href);
-  msg.className = 'msg ok';
-  msg.textContent = '脚本已下载！双击运行即可部署';
+  msg.className = 'msg ok'; msg.textContent = '脚本已下载!';
+  showGuide(guide, filename);
 }
 
-function genWin(json) {
-  const jl = json.split('\n');
-  let writeJson = 'echo ' + jl[0] + ' > "%USERPROFILE%\\.openclaw\\openclaw.json"\r\n';
-  for (let i = 1; i < jl.length; i++) writeJson += 'echo ' + jl[i] + ' >> "%USERPROFILE%\\.openclaw\\openclaw.json"\r\n';
-  return [
-    '@echo off', 'chcp 65001 >nul', 'title OpenClaw 一键部署', 'echo.',
-    'echo ========================================',
-    'echo   OpenClaw 一键部署脚本 (Windows)',
-    'echo ========================================', 'echo.',
-    'echo [1/4] 检查 Node.js ...', 'where node >nul 2>nul',
-    'if %errorlevel% neq 0 (',
-    '  echo [错误] 未检测到 Node.js，请先安装: https://nodejs.org/',
-    '  pause', '  exit /b 1', ')',
-    'for /f "tokens=*" %%i in (\'node -v\') do echo   Node.js: %%i', 'echo.',
-    'echo [2/4] 安装 OpenClaw ...',
-    'call npm install -g openclaw@latest',
-    'if %errorlevel% neq 0 ( echo 安装失败 & pause & exit /b 1 )',
-    'echo   安装完成', 'echo.',
-    'echo [3/4] 写入配置 ...',
-    'if not exist "%USERPROFILE%\\.openclaw" mkdir "%USERPROFILE%\\.openclaw"',
-  ].join('\r\n') + '\r\n' + writeJson + [
-    'echo   配置已写入', 'echo.',
-    'echo [4/4] 启动 OpenClaw ...', 'echo.',
-    'echo   即将打开浏览器 http://127.0.0.1:18789/',
-    'echo   关闭此窗口即可停止服务', 'echo.',
-    'start http://127.0.0.1:18789/',
-    'call openclaw gateway',
-  ].join('\r\n');
+function showGuide(el, filename) {
+  if (state.os === 'windows') {
+    el.innerHTML = '<h3>下一步：运行脚本</h3><ol>' +
+      '<li>找到下载的 <b>' + filename + '</b> 文件</li>' +
+      '<li>双击运行（如弹出安全提示，点"更多信息"→"仍要运行"）</li>' +
+      '<li>等待自动安装完成，浏览器会自动打开</li></ol>';
+  } else {
+    const cmd = 'bash ~/Downloads/' + filename;
+    el.innerHTML = '<h3>下一步：运行脚本</h3><ol>' +
+      '<li>打开 <b>终端</b>（在启动台搜索"终端"或"Terminal"）</li>' +
+      '<li>复制粘贴下面的命令，按回车：</li></ol>' +
+      '<div class="cmd-box"><span>' + cmd + '</span>' +
+      '<button onclick="copyCmd(\'' + cmd + '\', this)">复制</button></div>' +
+      '<ol start="3"><li>全自动安装，完成后浏览器自动打开</li></ol>';
+  }
+  el.classList.remove('hidden');
 }
 
 function genMac(json) {
   return [
-    '#!/bin/bash', '',
+    '#!/bin/bash',
+    'set -e', '',
+    'echo ""',
     'echo "========================================"',
-    'echo "  OpenClaw 一键部署脚本 (macOS)"',
-    'echo "========================================"', 'echo ""',
-    'echo "[1/4] 检查 Node.js ..."',
-    'if ! command -v node &>/dev/null; then',
-    '  echo "[错误] 未检测到 Node.js，请先安装: brew install node"',
-    '  exit 1', 'fi',
-    'echo "  Node.js: $(node -v)"', 'echo ""',
+    'echo "  OpenClaw 一键部署 (macOS)"',
+    'echo "  全自动安装，请耐心等待"',
+    'echo "========================================"',
+    'echo ""', '',
+    '# [1/4] 自动安装 Node.js',
+    'echo "[1/4] 准备 Node.js ..."',
+    'if command -v node &>/dev/null; then',
+    '  echo "  已安装 Node.js $(node -v)"',
+    'else',
+    '  echo "  未检测到 Node.js，正在自动安装..."',
+    '  if command -v brew &>/dev/null; then',
+    '    echo "  通过 Homebrew 安装..."',
+    '    brew install node',
+    '  else',
+    '    echo "  正在下载 Node.js 安装包..."',
+    '    ARCH=$(uname -m)',
+    '    NODE_VER="v22.14.0"',
+    '    if [ "$ARCH" = "arm64" ]; then',
+    '      NODE_PKG="node-${NODE_VER}-darwin-arm64.tar.gz"',
+    '    else',
+    '      NODE_PKG="node-${NODE_VER}-darwin-x64.tar.gz"',
+    '    fi',
+    '    curl -fsSL "https://nodejs.org/dist/${NODE_VER}/${NODE_PKG}" -o /tmp/node.tar.gz',
+    '    sudo mkdir -p /usr/local/lib/nodejs',
+    '    sudo tar -xzf /tmp/node.tar.gz -C /usr/local/lib/nodejs',
+    '    NODE_DIR="/usr/local/lib/nodejs/node-${NODE_VER}-darwin-${ARCH}"',
+    '    sudo ln -sf "$NODE_DIR/bin/node" /usr/local/bin/node',
+    '    sudo ln -sf "$NODE_DIR/bin/npm" /usr/local/bin/npm',
+    '    sudo ln -sf "$NODE_DIR/bin/npx" /usr/local/bin/npx',
+    '    rm /tmp/node.tar.gz',
+    '    echo "  Node.js $(node -v) 安装完成"',
+    '  fi',
+    'fi',
+    'echo ""', '',
+    '# [2/4] 安装 OpenClaw',
     'echo "[2/4] 安装 OpenClaw ..."',
-    'npm install -g openclaw@latest || { echo "安装失败"; exit 1; }',
-    'echo "  安装完成"', 'echo ""',
+    'npm install -g openclaw@latest || sudo npm install -g openclaw@latest',
+    'echo "  安装完成"',
+    'echo ""', '',
+    '# [3/4] 写入配置',
     'echo "[3/4] 写入配置 ..."',
     'mkdir -p "$HOME/.openclaw"',
     "cat > \"$HOME/.openclaw/openclaw.json\" << 'EOFCONFIG'",
     json,
     'EOFCONFIG',
-    'echo "  配置已写入"', 'echo ""',
+    'echo "  配置已写入"',
+    'echo ""', '',
+    '# [4/4] 启动',
     'echo "[4/4] 启动 OpenClaw ..."',
-    'echo "  即将打开浏览器 http://127.0.0.1:18789/"',
-    'echo "  按 Ctrl+C 停止服务"', 'echo ""',
+    'echo "  浏览器将自动打开 http://127.0.0.1:18789/"',
+    'echo "  按 Ctrl+C 停止服务"',
+    'echo ""',
     'sleep 2 && open "http://127.0.0.1:18789/" &',
     'openclaw gateway',
   ].join('\n');
+}
+
+function genWin(json) {
+  const jl = json.split('\n');
+  let wj = 'echo ' + jl[0] + ' > "%USERPROFILE%\\.openclaw\\openclaw.json"\r\n';
+  for (let i = 1; i < jl.length; i++) wj += 'echo ' + jl[i] + ' >> "%USERPROFILE%\\.openclaw\\openclaw.json"\r\n';
+  return [
+    '@echo off', 'chcp 65001 >nul', 'title OpenClaw 一键部署',
+    'echo.', 'echo ========================================',
+    'echo   OpenClaw 一键部署 (Windows)', 'echo   全自动安装，请耐心等待',
+    'echo ========================================', 'echo.', '',
+    'echo [1/4] 准备 Node.js ...', 'where node >nul 2>nul',
+    'if %errorlevel% equ 0 (',
+    '  for /f "tokens=*" %%i in (\'node -v\') do echo   已安装 Node.js %%i',
+    '  goto :node_ok', ')',
+    'echo   未检测到 Node.js，正在自动安装...',
+    'echo   正在下载 Node.js 安装包（约30MB）...',
+    'powershell -Command "Invoke-WebRequest -Uri \'https://nodejs.org/dist/v22.14.0/node-v22.14.0-x64.msi\' -OutFile \'%TEMP%\\node_install.msi\'"',
+    'if %errorlevel% neq 0 (',
+    '  echo   下载失败，请检查网络后重试', '  pause', '  exit /b 1', ')',
+    'echo   正在安装 Node.js ...',
+    'msiexec /i "%TEMP%\\node_install.msi" /qn /norestart',
+    'set "PATH=%ProgramFiles%\\nodejs;%PATH%"',
+    'del "%TEMP%\\node_install.msi"',
+    'echo   Node.js 安装完成',
+    ':node_ok', 'echo.', '',
+    'echo [2/4] 安装 OpenClaw ...',
+    'call npm install -g openclaw@latest',
+    'if %errorlevel% neq 0 ( echo   安装失败，请检查网络 & pause & exit /b 1 )',
+    'echo   安装完成', 'echo.', '',
+    'echo [3/4] 写入配置 ...',
+    'if not exist "%USERPROFILE%\\.openclaw" mkdir "%USERPROFILE%\\.openclaw"',
+  ].join('\r\n') + '\r\n' + wj + [
+    'echo   配置已写入', 'echo.', '',
+    'echo [4/4] 启动 OpenClaw ...', 'echo.',
+    'echo   浏览器将自动打开 http://127.0.0.1:18789/',
+    'echo   关闭此窗口即可停止服务', 'echo.',
+    'start http://127.0.0.1:18789/',
+    'call openclaw gateway',
+  ].join('\r\n');
 }
 </script>
 </body>
