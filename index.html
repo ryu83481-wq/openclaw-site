@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenClaw 一键部署</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+.container { background: #1e293b; border-radius: 16px; padding: 40px; max-width: 480px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+h1 { text-align: center; font-size: 28px; margin-bottom: 8px; }
+h1 span { color: #38bdf8; }
+.subtitle { text-align: center; color: #94a3b8; margin-bottom: 32px; font-size: 14px; }
+label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #cbd5e1; }
+.form-group { margin-bottom: 20px; }
+.btn-group { display: flex; gap: 8px; }
+.btn-group button { flex: 1; padding: 10px; border: 2px solid #334155; border-radius: 8px; background: #0f172a; color: #94a3b8; cursor: pointer; font-size: 14px; transition: all .2s; }
+.btn-group button:hover { border-color: #475569; color: #e2e8f0; }
+.btn-group button.active { border-color: #38bdf8; color: #38bdf8; background: #0c4a6e; }
+input { width: 100%; padding: 10px 14px; border: 2px solid #334155; border-radius: 8px; background: #0f172a; color: #e2e8f0; font-size: 14px; outline: none; transition: border-color .2s; }
+input:focus { border-color: #38bdf8; }
+input::placeholder { color: #475569; }
+#generate-btn { width: 100%; padding: 14px; border: none; border-radius: 10px; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; transition: opacity .2s; }
+#generate-btn:hover { opacity: 0.9; }
+.msg { text-align: center; margin-top: 12px; font-size: 13px; min-height: 20px; }
+.msg.ok { color: #4ade80; }
+.msg.err { color: #f87171; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🐾 Open<span>Claw</span></h1>
+  <p class="subtitle">选择配置，一键生成部署脚本</p>
+  <div class="form-group">
+    <label>操作系统</label>
+    <div id="os-select" class="btn-group"></div>
+  </div>
+  <div class="form-group">
+    <label>AI 模型提供商</label>
+    <div id="provider-select" class="btn-group"></div>
+  </div>
+  <div class="form-group" id="apikey-group">
+    <label>API Key</label>
+    <input type="password" id="apikey" placeholder="输入你的 API Key">
+  </div>
+  <button id="generate-btn" onclick="generateScript()">生成部署脚本</button>
+  <p id="msg" class="msg"></p>
+</div>
+<script>
+const state = { os: 'windows', provider: 'anthropic' };
+const providers = {
+  anthropic: { name: 'Anthropic (Claude)', provider: 'anthropic', model: 'claude-sonnet-4-20250514', needKey: true },
+  openai: { name: 'OpenAI (GPT)', provider: 'openai', model: 'gpt-4o', needKey: true },
+  ollama: { name: 'Ollama (本地)', provider: 'ollama', model: 'llama3', baseUrl: 'http://localhost:11434', needKey: false }
+};
+
+function createBtnGroup(containerId, options, stateKey) {
+  const el = document.getElementById(containerId);
+  options.forEach(([val, label]) => {
+    const btn = document.createElement('button');
+    btn.textContent = label;
+    btn.className = val === state[stateKey] ? 'active' : '';
+    btn.onclick = () => {
+      state[stateKey] = val;
+      el.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (stateKey === 'provider') toggleKeyInput();
+    };
+    el.appendChild(btn);
+  });
+}
+
+function toggleKeyInput() {
+  const g = document.getElementById('apikey-group');
+  g.classList.toggle('hidden', !providers[state.provider].needKey);
+}
+
+createBtnGroup('os-select', [['windows','Windows'],['macos','macOS']], 'os');
+createBtnGroup('provider-select', [['anthropic','Anthropic'],['openai','OpenAI'],['ollama','Ollama']], 'provider');
+toggleKeyInput();
+
+function generateScript() {
+  const msg = document.getElementById('msg');
+  const p = providers[state.provider];
+  const key = document.getElementById('apikey').value.trim();
+  if (p.needKey && !key) { msg.className='msg err'; msg.textContent='请输入 API Key'; return; }
+  const config = { provider: p.provider, model: p.model };
+  if (key) config.apiKey = key;
+  if (p.baseUrl) config.baseUrl = p.baseUrl;
+  const json = JSON.stringify(config, null, 2);
+  let script, filename;
+  if (state.os === 'windows') { script = genWin(json); filename = 'openclaw-deploy.bat'; }
+  else { script = genMac(json); filename = 'openclaw-deploy.sh'; }
+  const blob = new Blob([script], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  msg.className = 'msg ok';
+  msg.textContent = '脚本已下载！双击运行即可部署';
+}
+
+function genWin(json) {
+  const jl = json.split('\n');
+  let writeJson = 'echo ' + jl[0] + ' > "%USERPROFILE%\\.openclaw\\openclaw.json"\r\n';
+  for (let i = 1; i < jl.length; i++) writeJson += 'echo ' + jl[i] + ' >> "%USERPROFILE%\\.openclaw\\openclaw.json"\r\n';
+  return [
+    '@echo off', 'chcp 65001 >nul', 'title OpenClaw 一键部署', 'echo.',
+    'echo ========================================',
+    'echo   OpenClaw 一键部署脚本 (Windows)',
+    'echo ========================================', 'echo.',
+    'echo [1/4] 检查 Node.js ...', 'where node >nul 2>nul',
+    'if %errorlevel% neq 0 (',
+    '  echo [错误] 未检测到 Node.js，请先安装: https://nodejs.org/',
+    '  pause', '  exit /b 1', ')',
+    'for /f "tokens=*" %%i in (\'node -v\') do echo   Node.js: %%i', 'echo.',
+    'echo [2/4] 安装 OpenClaw ...',
+    'call npm install -g openclaw@latest',
+    'if %errorlevel% neq 0 ( echo 安装失败 & pause & exit /b 1 )',
+    'echo   安装完成', 'echo.',
+    'echo [3/4] 写入配置 ...',
+    'if not exist "%USERPROFILE%\\.openclaw" mkdir "%USERPROFILE%\\.openclaw"',
+  ].join('\r\n') + '\r\n' + writeJson + [
+    'echo   配置已写入', 'echo.',
+    'echo [4/4] 启动 OpenClaw ...', 'echo.',
+    'echo   即将打开浏览器 http://127.0.0.1:18789/',
+    'echo   关闭此窗口即可停止服务', 'echo.',
+    'start http://127.0.0.1:18789/',
+    'call openclaw gateway',
+  ].join('\r\n');
+}
+
+function genMac(json) {
+  return [
+    '#!/bin/bash', '',
+    'echo "========================================"',
+    'echo "  OpenClaw 一键部署脚本 (macOS)"',
+    'echo "========================================"', 'echo ""',
+    'echo "[1/4] 检查 Node.js ..."',
+    'if ! command -v node &>/dev/null; then',
+    '  echo "[错误] 未检测到 Node.js，请先安装: brew install node"',
+    '  exit 1', 'fi',
+    'echo "  Node.js: $(node -v)"', 'echo ""',
+    'echo "[2/4] 安装 OpenClaw ..."',
+    'npm install -g openclaw@latest || { echo "安装失败"; exit 1; }',
+    'echo "  安装完成"', 'echo ""',
+    'echo "[3/4] 写入配置 ..."',
+    'mkdir -p "$HOME/.openclaw"',
+    "cat > \"$HOME/.openclaw/openclaw.json\" << 'EOFCONFIG'",
+    json,
+    'EOFCONFIG',
+    'echo "  配置已写入"', 'echo ""',
+    'echo "[4/4] 启动 OpenClaw ..."',
+    'echo "  即将打开浏览器 http://127.0.0.1:18789/"',
+    'echo "  按 Ctrl+C 停止服务"', 'echo ""',
+    'sleep 2 && open "http://127.0.0.1:18789/" &',
+    'openclaw gateway',
+  ].join('\n');
+}
+</script>
+</body>
+</html>
