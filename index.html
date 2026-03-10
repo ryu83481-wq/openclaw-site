@@ -169,7 +169,18 @@ function genMac(key, openaiBase) {
     'echo "  启动后浏览器将自动打开 http://localhost:8080"',
     'echo ""',
     'sleep 15 && open "http://localhost:8080/" &',
-    'DATA_DIR="$HOME/.open-webui" uvx --python 3.11 open-webui@latest serve',
+    'ARCH=$(uname -m)',
+    'if [ "$ARCH" = "arm64" ]; then',
+    '  DATA_DIR="$HOME/.open-webui" uvx --python 3.11 open-webui@latest serve',
+    'else',
+    '  echo "  检测到 Intel Mac，使用兼容模式安装..."',
+    '  uv venv --python 3.11 "$HOME/.open-webui-env"',
+    '  source "$HOME/.open-webui-env/bin/activate"',
+    '  uv pip install open-webui --no-deps',
+    '  uv pip install $(uv pip show open-webui 2>/dev/null | grep Requires | sed "s/Requires: //;s/,/ /g;s/onnxruntime//g")',
+    '  uv pip install "onnxruntime<1.24" 2>/dev/null || true',
+    '  DATA_DIR="$HOME/.open-webui" open-webui serve',
+    'fi',
   ].join('\n');
 }
 
